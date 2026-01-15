@@ -10,6 +10,10 @@
     <span class="removed-letters-list">{{ removedLetters.join(', ') }}</span>
   </div>
 
+  <div class="app-description">
+    A minimalist letter-based reaction game you can adapt to your own rules.
+  </div>
+
   <div class="game-content" [class.show-all-letters-mode]="gameConfig.showAllLetters">
     <!-- Settings Button -->
     <button class="settings-button" (click)="toggleSettings()" title="Settings">
@@ -78,6 +82,27 @@
       </div>
 
       <div class="settings-content">
+        <!-- Presets -->
+        <div class="config-field preset-section">
+          <label>
+            Presets
+            <span class="field-hint">Quick setups you can still customize</span>
+          </label>
+          <div class="preset-list">
+            <button
+              type="button"
+              class="preset-button"
+              *ngFor="let preset of presets"
+              (click)="applyPreset(preset)"
+            >
+              <div class="preset-name">{{ preset.name }}</div>
+              <div *ngIf="preset.description" class="preset-description">
+                {{ preset.description }}
+              </div>
+            </button>
+          </div>
+        </div>
+
         <!-- Letters Configuration -->
         <div class="config-field">
           <label for="letters-input">
@@ -263,6 +288,14 @@
         <button class="config-button save-button" (click)="saveConfig()">
           Save & Apply
         </button>
+        <a
+          class="coffee-link"
+          [href]="buyMeACoffeeUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          If this helped you, consider buying me a coffee ☕
+        </a>
       </div>
     </div>
   </div>

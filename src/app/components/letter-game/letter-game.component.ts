@@ -31,6 +31,79 @@ interface GameConfig {
   deathMessageDurationSeconds: number;
 }
 
+interface GamePreset {
+  name: string;
+  description?: string;
+  config: GameConfig;
+}
+
+const GAME_PRESETS: GamePreset[] = [
+  {
+    name: 'Party Mode',
+    description: 'Fast swaps, short clicks, high energy.',
+    config: {
+      letters: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'],
+      letterChangeIntervalMs: 200,
+      clickTimerSeconds: 3,
+      cycleCountdownSeconds: 0,
+      showRemovedLetters: false,
+      showAllLetters: false,
+      addTrump: true,
+      randomizeLettersInShowAll: false,
+      deathMessage: 'PARTY OVER',
+      deathMessageDurationSeconds: 1.5
+    }
+  },
+  {
+    name: 'Focus / Reaction Mode',
+    description: 'Fewer letters, ultra-fast reactions.',
+    config: {
+      letters: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N'],
+      letterChangeIntervalMs: 140,
+      clickTimerSeconds: 2,
+      cycleCountdownSeconds: 0,
+      showRemovedLetters: true,
+      showAllLetters: false,
+      addTrump: false,
+      randomizeLettersInShowAll: false,
+      deathMessage: 'TOO SLOW',
+      deathMessageDurationSeconds: 1.5
+    }
+  },
+  {
+    name: 'Classroom Mode',
+    description: 'All letters visible for group play.',
+    config: {
+      letters: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'],
+      letterChangeIntervalMs: 300,
+      clickTimerSeconds: 10,
+      cycleCountdownSeconds: 0,
+      showRemovedLetters: true,
+      showAllLetters: true,
+      addTrump: false,
+      randomizeLettersInShowAll: false,
+      deathMessage: 'TRY AGAIN',
+      deathMessageDurationSeconds: 2
+    }
+  },
+  {
+    name: 'Elimination Mode',
+    description: 'Steady pace, rising pressure.',
+    config: {
+      letters: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'],
+      letterChangeIntervalMs: 280,
+      clickTimerSeconds: 4,
+      cycleCountdownSeconds: 5,
+      showRemovedLetters: true,
+      showAllLetters: false,
+      addTrump: false,
+      randomizeLettersInShowAll: false,
+      deathMessage: 'ELIMINATED',
+      deathMessageDurationSeconds: 2
+    }
+  }
+];
+
 @Component({
   selector: 'app-letter-game',
   standalone: true,
@@ -41,6 +114,8 @@ interface GameConfig {
 export class LetterGameComponent implements OnInit, OnDestroy {
   // Game configuration (user-configurable)
   gameConfig: GameConfig = { ...DEFAULT_GAME_CONFIG };
+  presets: GamePreset[] = GAME_PRESETS;
+  readonly buyMeACoffeeUrl: string = 'https://www.buymeacoffee.com/kennedydc';
   
   // Settings UI state
   showSettings: boolean = false;
@@ -76,16 +151,7 @@ export class LetterGameComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     // Initialize input values to match current config
-    this.lettersInput = this.gameConfig.letters.join('');
-    this.letterChangeIntervalMsInput = this.gameConfig.letterChangeIntervalMs;
-    this.clickTimerSecondsInput = this.gameConfig.clickTimerSeconds;
-    this.cycleCountdownSecondsInput = this.gameConfig.cycleCountdownSeconds;
-    this.showRemovedLettersInput = this.gameConfig.showRemovedLetters;
-    this.showAllLettersInput = this.gameConfig.showAllLetters;
-    this.addTrumpInput = this.gameConfig.addTrump;
-    this.randomizeLettersInShowAllInput = this.gameConfig.randomizeLettersInShowAll;
-    this.deathMessageInput = this.gameConfig.deathMessage;
-    this.deathMessageDurationSecondsInput = this.gameConfig.deathMessageDurationSeconds;
+    this.syncInputsFromConfig();
     
     this.initializeGame();
   }
@@ -465,16 +531,7 @@ export class LetterGameComponent implements OnInit, OnDestroy {
     this.showSettings = !this.showSettings;
     if (this.showSettings) {
       // Update input values to current config when opening
-      this.lettersInput = this.gameConfig.letters.join('');
-      this.letterChangeIntervalMsInput = this.gameConfig.letterChangeIntervalMs;
-      this.clickTimerSecondsInput = this.gameConfig.clickTimerSeconds;
-      this.cycleCountdownSecondsInput = this.gameConfig.cycleCountdownSeconds;
-      this.showRemovedLettersInput = this.gameConfig.showRemovedLetters;
-      this.showAllLettersInput = this.gameConfig.showAllLetters;
-      this.addTrumpInput = this.gameConfig.addTrump;
-      this.randomizeLettersInShowAllInput = this.gameConfig.randomizeLettersInShowAll;
-      this.deathMessageInput = this.gameConfig.deathMessage;
-      this.deathMessageDurationSecondsInput = this.gameConfig.deathMessageDurationSeconds;
+      this.syncInputsFromConfig();
     }
   }
 
@@ -532,6 +589,26 @@ export class LetterGameComponent implements OnInit, OnDestroy {
    */
   resetToDefaults(): void {
     this.gameConfig = { ...DEFAULT_GAME_CONFIG };
+    this.syncInputsFromConfig();
+    this.restartGame();
+  }
+
+  /**
+   * Applies a preset configuration instantly
+   */
+  applyPreset(preset: GamePreset): void {
+    this.gameConfig = {
+      ...preset.config,
+      letters: [...preset.config.letters]
+    };
+    this.syncInputsFromConfig();
+    this.restartGame();
+  }
+
+  /**
+   * Syncs form inputs with current configuration
+   */
+  private syncInputsFromConfig(): void {
     this.lettersInput = this.gameConfig.letters.join('');
     this.letterChangeIntervalMsInput = this.gameConfig.letterChangeIntervalMs;
     this.clickTimerSecondsInput = this.gameConfig.clickTimerSeconds;
@@ -542,7 +619,6 @@ export class LetterGameComponent implements OnInit, OnDestroy {
     this.randomizeLettersInShowAllInput = this.gameConfig.randomizeLettersInShowAll;
     this.deathMessageInput = this.gameConfig.deathMessage;
     this.deathMessageDurationSecondsInput = this.gameConfig.deathMessageDurationSeconds;
-    this.restartGame();
   }
 
   /**

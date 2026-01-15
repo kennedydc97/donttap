@@ -1,0 +1,17 @@
+{
+  "name": "DON'T TAP",
+  "short_name": "DON'T TAP",
+  "description": "A minimalist letter-based reaction game you can adapt to your own rules.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5f5f5",
+  "theme_color": "#555555",
+  "icons": [
+    {
+      "src": "/assets/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
