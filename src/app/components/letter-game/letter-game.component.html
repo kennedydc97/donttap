@@ -1,0 +1,270 @@
+<div class="game-container">
+  <!-- Death Message Display -->
+  <div *ngIf="showDeathMessage" class="death-message">
+    {{ gameConfig.deathMessage }}
+  </div>
+
+  <!-- Removed Letters Display (at top) -->
+  <div *ngIf="gameConfig.showRemovedLetters && removedLetters.length > 0 && !gameConfig.showAllLetters && !showDeathMessage" class="removed-letters-top">
+    <span class="removed-letters-label">Removed: </span>
+    <span class="removed-letters-list">{{ removedLetters.join(', ') }}</span>
+  </div>
+
+  <div class="game-content" [class.show-all-letters-mode]="gameConfig.showAllLetters">
+    <!-- Settings Button -->
+    <button class="settings-button" (click)="toggleSettings()" title="Settings">
+      ⚙️
+    </button>
+
+    <!-- Show All Letters Mode -->
+    <div *ngIf="gameConfig.showAllLetters" class="all-letters-container">
+      <div class="all-letters-grid">
+        <div
+          *ngFor="let letter of getActualLettersForDisplay()"
+          class="letter-card"
+          [class.removed]="isLetterRemoved(letter)"
+          [class.clickable]="!isLetterRemoved(letter)"
+          (click)="onLetterCardClick(letter)"
+        >
+          {{ letter }}
+        </div>
+      </div>
+      
+      <!-- Countdown Display -->
+      <div class="countdown-display">
+        <div *ngIf="isCycleCountdownActive && !isCountdownActive" class="countdown cycle-countdown">
+          Cycle: {{ cycleCountdownValue }}
+        </div>
+        <div *ngIf="isCountdownActive" class="countdown click-countdown">
+          Click: {{ countdownValue }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Single Letter Display Mode -->
+    <div *ngIf="!gameConfig.showAllLetters" class="single-letter-mode">
+      <!-- Letter Display -->
+      <div 
+        class="letter-display" 
+        (click)="onLetterClick()"
+        [class.countdown-active]="isCountdownActive"
+      >
+        <span class="letter">{{ currentLetter || '?' }}</span>
+        
+        <!-- Cycle Countdown Timer (during cycling) -->
+        <div *ngIf="isCycleCountdownActive && !isCountdownActive" class="countdown cycle-countdown">
+          {{ cycleCountdownValue }}
+        </div>
+        
+        <!-- Click Countdown Timer (after click) -->
+        <div *ngIf="isCountdownActive" class="countdown click-countdown">
+          {{ countdownValue }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Restart Button -->
+    <button class="restart-button" (click)="restartGame()">
+      Restart
+    </button>
+  </div>
+
+  <!-- Settings Modal/Panel -->
+  <div class="settings-overlay" *ngIf="showSettings" (click)="toggleSettings()">
+    <div class="settings-panel" (click)="$event.stopPropagation()">
+      <div class="settings-header">
+        <h2>Game Configuration</h2>
+        <button class="close-button" (click)="toggleSettings()">×</button>
+      </div>
+
+      <div class="settings-content">
+        <!-- Letters Configuration -->
+        <div class="config-field">
+          <label for="letters-input">
+            Letters (A-Z)
+            <span class="field-hint">Enter letters without spaces</span>
+          </label>
+          <input 
+            id="letters-input"
+            type="text" 
+            [(ngModel)]="lettersInput"
+            placeholder="ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+            class="config-input"
+          />
+          <div class="field-info">
+            Current: {{ getActualLettersForDisplay().length }} unique letters{{ gameConfig.addTrump ? ' (including trump)' : '' }}
+          </div>
+        </div>
+
+        <!-- Letter Change Interval -->
+        <div class="config-field">
+          <label for="interval-input">
+            Letter Change Interval (ms)
+            <span class="field-hint">Time between letter changes</span>
+          </label>
+          <input 
+            id="interval-input"
+            type="number" 
+            [(ngModel)]="letterChangeIntervalMsInput"
+            min="10"
+            max="5000"
+            step="10"
+            class="config-input"
+          />
+          <div class="field-info">
+            Current: {{ gameConfig.letterChangeIntervalMs }}ms
+          </div>
+        </div>
+
+        <!-- Click Timer -->
+        <div class="config-field">
+          <label for="timer-input">
+            Click Timer (seconds)
+            <span class="field-hint">Countdown duration after clicking</span>
+          </label>
+          <input 
+            id="timer-input"
+            type="number" 
+            [(ngModel)]="clickTimerSecondsInput"
+            min="1"
+            max="60"
+            step="1"
+            class="config-input"
+          />
+          <div class="field-info">
+            Current: {{ gameConfig.clickTimerSeconds }}s
+          </div>
+        </div>
+
+        <!-- Cycle Countdown Timer -->
+        <div class="config-field">
+          <label for="cycle-countdown-input">
+            Cycle Countdown (seconds)
+            <span class="field-hint">Countdown during letter cycling (0 = disabled)</span>
+          </label>
+          <input 
+            id="cycle-countdown-input"
+            type="number" 
+            [(ngModel)]="cycleCountdownSecondsInput"
+            min="0"
+            max="60"
+            step="1"
+            class="config-input"
+          />
+          <div class="field-info">
+            Current: {{ gameConfig.cycleCountdownSeconds === 0 ? 'Disabled' : gameConfig.cycleCountdownSeconds + 's' }}
+          </div>
+        </div>
+
+        <!-- Show Removed Letters -->
+        <div class="config-field">
+          <label class="checkbox-label">
+            <input 
+              type="checkbox" 
+              [(ngModel)]="showRemovedLettersInput"
+              class="config-checkbox"
+            />
+            <span>Show Removed Letters</span>
+          </label>
+          <div class="field-info">
+            Display removed letters at the top of the screen (single letter mode only)
+          </div>
+        </div>
+
+        <!-- Show All Letters -->
+        <div class="config-field">
+          <label class="checkbox-label">
+            <input 
+              type="checkbox" 
+              [(ngModel)]="showAllLettersInput"
+              class="config-checkbox"
+            />
+            <span>Show All Letters</span>
+          </label>
+          <div class="field-info">
+            Display all letters in card format with removed letters grayed out
+          </div>
+        </div>
+
+        <!-- Add Trump -->
+        <div class="config-field">
+          <label class="checkbox-label">
+            <input 
+              type="checkbox" 
+              [(ngModel)]="addTrumpInput"
+              class="config-checkbox"
+            />
+            <span>Add Trump</span>
+          </label>
+          <div class="field-info">
+            Add "?" (trump symbol) to the game in addition to the configured letters
+          </div>
+        </div>
+
+        <!-- Randomize Letters in Show All Mode -->
+        <div class="config-field">
+          <label class="checkbox-label">
+            <input 
+              type="checkbox" 
+              [(ngModel)]="randomizeLettersInShowAllInput"
+              class="config-checkbox"
+              [disabled]="!showAllLettersInput"
+            />
+            <span>Randomize Letters (Show All Mode)</span>
+          </label>
+          <div class="field-info">
+            Shuffle/scramble the letters instead of showing them in order (only applies in "Show All Letters" mode)
+          </div>
+        </div>
+
+        <!-- Death Message -->
+        <div class="config-field">
+          <label for="death-message-input">
+            Death Message
+            <span class="field-hint">Message shown when countdown ends</span>
+          </label>
+          <input 
+            id="death-message-input"
+            type="text" 
+            [(ngModel)]="deathMessageInput"
+            placeholder="YOU DIED"
+            class="config-input"
+          />
+          <div class="field-info">
+            Current: "{{ gameConfig.deathMessage }}"
+          </div>
+        </div>
+
+        <!-- Death Message Duration -->
+        <div class="config-field">
+          <label for="death-duration-input">
+            Death Message Duration (seconds)
+            <span class="field-hint">How long to show the death message</span>
+          </label>
+          <input 
+            id="death-duration-input"
+            type="number" 
+            [(ngModel)]="deathMessageDurationSecondsInput"
+            min="0"
+            max="10"
+            step="0.5"
+            class="config-input"
+          />
+          <div class="field-info">
+            Current: {{ gameConfig.deathMessageDurationSeconds }}s
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-actions">
+        <button class="config-button reset-button" (click)="resetToDefaults()">
+          Reset to Defaults
+        </button>
+        <button class="config-button save-button" (click)="saveConfig()">
+          Save & Apply
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
