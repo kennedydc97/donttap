@@ -6,4 +6,4 @@ How to play: tap the letter to stop the cycle, then tap to remove it before the 
 
 Live: https://donttap.app
 
-If this helped you, consider buying me a coffee ☕
+If this helped you, consider buying me a coffee ☕☕
